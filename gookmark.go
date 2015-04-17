@@ -12,7 +12,7 @@ func main() {
 	app.Version = Version
 	app.Usage = ""
 	app.Author = "nocd5"
-	app.Email = "nocd5r@gmail.com"
+	app.Email = "nocd5rd@gmail.com"
 	app.Commands = Commands
 
 	app.Run(os.Args)
