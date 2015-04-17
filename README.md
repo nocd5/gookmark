@@ -18,6 +18,8 @@ To install, use `go get`:
 
 ```bash
 $ go get -d github.com/nocd5/gookmark
+$ cd $GOPATH/src/github.com/nocd5/gookmark
+$ go install
 $ gookmark config ui.editor=vim
 $ gookmark config core.linefeed=unix
 ```
