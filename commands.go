@@ -53,9 +53,8 @@ var commandEdit = cli.Command{
 var commandConfig = cli.Command{
 	Name:  "config",
 	Usage: "Set configure",
-	Description: `
-    gookmark config ui.editor=vim
-    gookmark config core.linefeed=dos
+	Description: `gookmark config ui.editor=vim
+   gookmark config core.linefeed=dos
 `,
 	Action: doConfig,
 }
@@ -75,8 +74,10 @@ func assert(err error) {
 func doAdd(c *cli.Context) {
 	config, err := LoadConfig()
 	if err != nil {
-		config.Core.Linefeed = "unix"
+		fmt.Fprintln(os.Stderr, err)
+		return
 	}
+
 	var linefeed string
 	if config.Core.Linefeed == "unix" {
 		linefeed = "\n"
@@ -86,38 +87,20 @@ func doAdd(c *cli.Context) {
 		linefeed = "\n"
 	}
 
-	bookmarks, err := GetBookmarks()
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		return
-	}
-
-	path, err := GetBookmarkFilePath()
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		return
-	}
-	os.Mkdir(filepath.Dir(path), 0777)
-	fp, err := os.OpenFile(path, os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0666)
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		return
-	}
-	defer fp.Close()
-
 	wd, err := os.Getwd()
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return
 	}
+
 	var item string
 	if len(c.Args()) == 0 {
 		item = wd
 	} else {
 		for _, arg := range c.Args() {
-			if strings.IndexRune(arg, '/') == 0 || strings.IndexRune(arg, '\\') == 0 {
+			runes := []rune(arg)
+			if runes[0] == '/' || runes[0] == '\\' {
 				if runtime.GOOS == "windows" {
-					runes := []rune(arg)
 					if runes[0] == runes[1] {
 						item = arg
 					} else {
@@ -134,8 +117,14 @@ func doAdd(c *cli.Context) {
 			}
 		}
 	}
-
 	item = filepath.Clean(item)
+
+	bookmarks, err := GetBookmarks()
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		return
+	}
+
 	var uniqBookmarks []string
 	for _, bookmark := range bookmarks {
 		if bookmark != item {
@@ -143,6 +132,19 @@ func doAdd(c *cli.Context) {
 		}
 	}
 	uniqBookmarks = append([]string{item}, uniqBookmarks...)
+
+	path, err := GetBookmarkFilePath()
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		return
+	}
+	os.Mkdir(filepath.Dir(path), 0777)
+	fp, err := os.OpenFile(path, os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0666)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		return
+	}
+	defer fp.Close()
 
 	fmt.Fprint(fp, strings.Join(uniqBookmarks, linefeed))
 }
@@ -161,7 +163,8 @@ func doList(c *cli.Context) {
 func doEdit(c *cli.Context) {
 	config, err := LoadConfig()
 	if err != nil {
-		config.Ui.Editor = "more"
+		fmt.Fprintln(os.Stderr, err)
+		return
 	}
 
 	path, err := GetBookmarkFilePath()
@@ -191,7 +194,11 @@ func doConfig(c *cli.Context) {
 		option := buff[0]
 		value := buff[1]
 
-		config, _ := LoadConfig()
+		config, err := LoadConfig()
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			return
+		}
 		if section == "ui" {
 			if option == "editor" {
 				config.Ui.Editor = value
@@ -203,23 +210,25 @@ func doConfig(c *cli.Context) {
 		}
 		var buffer bytes.Buffer
 		encoder := toml.NewEncoder(&buffer)
-		err := encoder.Encode(config)
+		err = encoder.Encode(config)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			return
 		}
 
 		home, err := GetHomePath()
-		if err == nil {
-			configFile := filepath.Join(home, ".gookmarkrc")
-			fp, err := os.OpenFile(configFile, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0666)
-			if err != nil {
-				fmt.Fprintln(os.Stderr, err)
-				return
-			}
-			defer fp.Close()
-			fmt.Fprintln(fp, buffer.String())
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			return
 		}
+		configFile := filepath.Join(home, ".gookmarkrc")
+		fp, err := os.OpenFile(configFile, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0666)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			return
+		}
+		defer fp.Close()
+		fmt.Fprintln(fp, buffer.String())
 	}
 }
 
@@ -263,8 +272,8 @@ func GetBookmarks() ([]string, error) {
 }
 
 type Config struct {
-	Ui   UiSection
-	Core CoreSection
+	Ui   UiSection   `toml:"ui"`
+	Core CoreSection `toml:"core"`
 }
 
 type UiSection struct {
@@ -273,6 +282,15 @@ type UiSection struct {
 
 type CoreSection struct {
 	Linefeed string `toml:"linefeed"`
+}
+
+func SetDefaultConfig(config *Config) {
+	if len(config.Ui.Editor) <= 0 {
+		config.Ui.Editor = "more"
+	}
+	if len(config.Core.Linefeed) <= 0 {
+		config.Core.Linefeed = "unix"
+	}
 }
 
 func LoadConfig() (Config, error) {
@@ -285,6 +303,8 @@ func LoadConfig() (Config, error) {
 		if err == nil {
 			_, err = toml.DecodeFile(configFile, &config)
 		}
+		SetDefaultConfig(&config)
+		err = nil
 	}
 	return config, err
 }
