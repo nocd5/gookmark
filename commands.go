@@ -179,56 +179,18 @@ func doEdit(c *cli.Context) {
 }
 
 func doConfig(c *cli.Context) {
-	for _, arg := range c.Args() {
-		buff := strings.SplitN(arg, ".", 2)
-		if len(buff) != 2 {
-			fmt.Fprintln(os.Stderr, "Invalid option")
-			return
-		}
-		section := buff[0]
-		buff = strings.SplitN(buff[1], "=", 2)
-		if len(buff) != 2 {
-			fmt.Fprintln(os.Stderr, "Invalid option")
-			return
-		}
-		option := buff[0]
-		value := buff[1]
+	config, err := LoadConfig()
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		return
+	}
 
-		config, err := LoadConfig()
-		if err != nil {
-			fmt.Fprintln(os.Stderr, err)
-			return
+	if len(c.Args()) == 0 {
+		ShowCurrentConfig(&config)
+	} else {
+		for _, arg := range c.Args() {
+			SetNewConfig(&config, arg)
 		}
-		if section == "ui" {
-			if option == "editor" {
-				config.Ui.Editor = value
-			}
-		} else if section == "core" {
-			if option == "linefeed" {
-				config.Core.Linefeed = value
-			}
-		}
-		var buffer bytes.Buffer
-		encoder := toml.NewEncoder(&buffer)
-		err = encoder.Encode(config)
-		if err != nil {
-			fmt.Fprintln(os.Stderr, err)
-			return
-		}
-
-		home, err := GetHomePath()
-		if err != nil {
-			fmt.Fprintln(os.Stderr, err)
-			return
-		}
-		configFile := filepath.Join(home, ".gookmarkrc")
-		fp, err := os.OpenFile(configFile, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0666)
-		if err != nil {
-			fmt.Fprintln(os.Stderr, err)
-			return
-		}
-		defer fp.Close()
-		fmt.Fprintln(fp, buffer.String())
 	}
 }
 
@@ -307,4 +269,56 @@ func LoadConfig() (Config, error) {
 		err = nil
 	}
 	return config, err
+}
+
+func ShowCurrentConfig(config *Config) {
+	fmt.Println("ui.editor=" + config.Ui.Editor)
+	fmt.Println("core.linefeed=" + config.Core.Linefeed)
+}
+
+func SetNewConfig(config *Config, newConfig string) {
+	buff := strings.SplitN(newConfig, ".", 2)
+	if len(buff) != 2 {
+		fmt.Fprintln(os.Stderr, "Invalid option")
+		return
+	}
+	section := buff[0]
+	buff = strings.SplitN(buff[1], "=", 2)
+	if len(buff) != 2 {
+		fmt.Fprintln(os.Stderr, "Invalid option")
+		return
+	}
+	option := buff[0]
+	value := buff[1]
+
+	if section == "ui" {
+		if option == "editor" {
+			config.Ui.Editor = value
+		}
+	} else if section == "core" {
+		if option == "linefeed" {
+			config.Core.Linefeed = value
+		}
+	}
+	var buffer bytes.Buffer
+	encoder := toml.NewEncoder(&buffer)
+	err := encoder.Encode(config)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		return
+	}
+
+	home, err := GetHomePath()
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		return
+	}
+	configFile := filepath.Join(home, ".gookmarkrc")
+	fp, err := os.OpenFile(configFile, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0666)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		return
+	}
+	defer fp.Close()
+	fmt.Fprintln(fp, buffer.String())
 }
