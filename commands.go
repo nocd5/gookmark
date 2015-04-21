@@ -2,7 +2,6 @@ package main
 
 import (
 	"bufio"
-	"bytes"
 	"errors"
 	"fmt"
 	"log"
@@ -12,7 +11,6 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/BurntSushi/toml"
 	"github.com/codegangsta/cli"
 )
 
@@ -186,17 +184,20 @@ func doConfig(c *cli.Context) {
 	}
 
 	if len(c.Args()) == 0 {
-		ShowCurrentConfig(&config)
+		PrintCurrentConfig(&config)
 	} else {
 		for _, arg := range c.Args() {
-			SetNewConfig(&config, arg)
+			err := WriteNewConfig(&config, arg)
+			if err != nil {
+				fmt.Fprintln(os.Stderr, err)
+			}
 		}
 	}
 }
 
 func GetHomePath() (string, error) {
-	var home string = ""
-	var err error = nil
+	var home string
+	var err error
 	home = os.Getenv("HOME")
 	if len(home) == 0 {
 		home = os.Getenv("USERPROFILE")
@@ -208,7 +209,7 @@ func GetHomePath() (string, error) {
 }
 
 func GetBookmarkFilePath() (string, error) {
-	var path string = ""
+	var path string
 	home, err := GetHomePath()
 	if err == nil {
 		appData := filepath.Join(home, ".gookmark")
@@ -218,7 +219,7 @@ func GetBookmarkFilePath() (string, error) {
 }
 
 func GetBookmarks() ([]string, error) {
-	var bookmarks []string = nil
+	var bookmarks []string
 	path, err := GetBookmarkFilePath()
 	if err == nil {
 		fp, err := os.Open(path)
@@ -233,92 +234,7 @@ func GetBookmarks() ([]string, error) {
 	return bookmarks, err
 }
 
-type Config struct {
-	Ui   UiSection   `toml:"ui"`
-	Core CoreSection `toml:"core"`
-}
-
-type UiSection struct {
-	Editor string `toml:"editor"`
-}
-
-type CoreSection struct {
-	Linefeed string `toml:"linefeed"`
-}
-
-func SetDefaultConfig(config *Config) {
-	if len(config.Ui.Editor) <= 0 {
-		config.Ui.Editor = "more"
-	}
-	if len(config.Core.Linefeed) <= 0 {
-		config.Core.Linefeed = "unix"
-	}
-}
-
-func LoadConfig() (Config, error) {
-	var config Config
-	var err error
-	home, err := GetHomePath()
-	if err == nil {
-		configFile := filepath.Join(home, ".gookmarkrc")
-		_, err = os.Stat(configFile)
-		if err == nil {
-			_, err = toml.DecodeFile(configFile, &config)
-		}
-		SetDefaultConfig(&config)
-		err = nil
-	}
-	return config, err
-}
-
-func ShowCurrentConfig(config *Config) {
+func PrintCurrentConfig(config *Config) {
 	fmt.Println("ui.editor=" + config.Ui.Editor)
 	fmt.Println("core.linefeed=" + config.Core.Linefeed)
-}
-
-func SetNewConfig(config *Config, newConfig string) {
-	buff := strings.SplitN(newConfig, ".", 2)
-	if len(buff) != 2 {
-		fmt.Fprintln(os.Stderr, "Invalid option")
-		return
-	}
-	section := buff[0]
-	buff = strings.SplitN(buff[1], "=", 2)
-	if len(buff) != 2 {
-		fmt.Fprintln(os.Stderr, "Invalid option")
-		return
-	}
-	option := buff[0]
-	value := buff[1]
-
-	if section == "ui" {
-		if option == "editor" {
-			config.Ui.Editor = value
-		}
-	} else if section == "core" {
-		if option == "linefeed" {
-			config.Core.Linefeed = value
-		}
-	}
-	var buffer bytes.Buffer
-	encoder := toml.NewEncoder(&buffer)
-	err := encoder.Encode(config)
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		return
-	}
-
-	home, err := GetHomePath()
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		return
-	}
-	configFile := filepath.Join(home, ".gookmarkrc")
-	fp, err := os.OpenFile(configFile, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0666)
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		return
-	}
-	defer fp.Close()
-	fmt.Fprintln(fp, buffer.String())
 }
