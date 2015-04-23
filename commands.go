@@ -24,6 +24,7 @@ var Commands = []cli.Command{
 var commandAdd = cli.Command{
 	Name:    "add",
 	Aliases: []string{"a"},
+	Flags:   Flags,
 	Usage:   "Add bookmark",
 	Description: `
 `,
@@ -34,6 +35,7 @@ var commandList = cli.Command{
 	Name:    "list",
 	Aliases: []string{"l"},
 	Usage:   "Show bookmark list",
+	Flags:   Flags,
 	Description: `
 `,
 	Action: doList,
@@ -43,6 +45,7 @@ var commandEdit = cli.Command{
 	Name:    "edit",
 	Aliases: []string{"e"},
 	Usage:   "Edit bookmark list",
+	Flags:   Flags,
 	Description: `
 `,
 	Action: doEdit,
@@ -70,6 +73,8 @@ func assert(err error) {
 }
 
 func doAdd(c *cli.Context) {
+	group := c.String("group")
+
 	config, err := LoadConfig()
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
@@ -117,7 +122,7 @@ func doAdd(c *cli.Context) {
 	}
 	item = filepath.Clean(item)
 
-	bookmarks, err := GetBookmarks()
+	bookmarks, err := GetBookmarks(group)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return
@@ -131,7 +136,7 @@ func doAdd(c *cli.Context) {
 	}
 	uniqBookmarks = append([]string{item}, uniqBookmarks...)
 
-	path, err := GetBookmarkFilePath()
+	path, err := GetBookmarkFilePath(group)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return
@@ -148,7 +153,9 @@ func doAdd(c *cli.Context) {
 }
 
 func doList(c *cli.Context) {
-	bookmarks, err := GetBookmarks()
+	group := c.String("group")
+
+	bookmarks, err := GetBookmarks(group)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return
@@ -159,13 +166,15 @@ func doList(c *cli.Context) {
 }
 
 func doEdit(c *cli.Context) {
+	group := c.String("group")
+
 	config, err := LoadConfig()
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return
 	}
 
-	path, err := GetBookmarkFilePath()
+	path, err := GetBookmarkFilePath(group)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return
@@ -208,19 +217,19 @@ func GetHomePath() (string, error) {
 	return home, err
 }
 
-func GetBookmarkFilePath() (string, error) {
+func GetBookmarkFilePath(group string) (string, error) {
 	var path string
 	home, err := GetHomePath()
 	if err == nil {
 		appData := filepath.Join(home, ".gookmark")
-		path = filepath.Join(appData, "bookmark.txt")
+		path = filepath.Join(appData, group+".txt")
 	}
 	return path, err
 }
 
-func GetBookmarks() ([]string, error) {
+func GetBookmarks(group string) ([]string, error) {
 	var bookmarks []string
-	path, err := GetBookmarkFilePath()
+	path, err := GetBookmarkFilePath(group)
 	if err == nil {
 		fp, err := os.Open(path)
 		if err == nil {
