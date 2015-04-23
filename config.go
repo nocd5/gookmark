@@ -12,8 +12,9 @@ import (
 )
 
 type Config struct {
-	Ui   UiSection   `toml:"ui"`
-	Core CoreSection `toml:"core"`
+	Ui    UiSection         `toml:"ui"`
+	Core  CoreSection       `toml:"core"`
+	Alias map[string]string `toml:"alias"`
 }
 
 type UiSection struct {
@@ -96,6 +97,11 @@ func WriteNewConfig(config *Config, newConfig string) error {
 		} else {
 			err = errors.New("Unknown property: " + configOption.Section + "." + configOption.Property)
 		}
+	} else if configOption.Section == "alias" {
+		if config.Alias == nil {
+			config.Alias = make(map[string]string)
+		}
+		config.Alias[configOption.Property] = configOption.Value
 	} else {
 		err = errors.New("Unknown section: " + configOption.Section)
 	}
