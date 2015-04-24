@@ -1,9 +1,9 @@
 package main
 
 import (
+	"./utils"
 	"fmt"
 	"os"
-	"./utils"
 
 	"github.com/codegangsta/cli"
 )
