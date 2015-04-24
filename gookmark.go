@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
-	"strings"
+	"./utils"
 
 	"github.com/codegangsta/cli"
 )
@@ -31,21 +31,26 @@ func ReplaceArgsByAlias(src []string) []string {
 		subcommands = append(subcommands, cmd.Name)
 	}
 
-	skipNext := false
+	replaceEnd := false
 	for _, arg := range src {
-		if skipNext {
+		if replaceEnd {
 			dest = append(dest, arg)
-			skipNext = false
 			continue
 		}
 
 		if Contains(subcommands, arg) {
-			skipNext = true
+			replaceEnd = true
 		}
 
 		alias := config.Alias[arg]
 		if len(alias) > 0 {
-			dest = append(dest, strings.SplitN(alias, " ", 2)...)
+			result, err := utils.Split(alias, ' ', '"')
+			if err != nil {
+				fmt.Fprintln(os.Stderr, err)
+				return src
+			}
+			dest = append(dest, result...)
+			replaceEnd = true
 		} else {
 			dest = append(dest, arg)
 		}
