@@ -28,6 +28,23 @@ $ gookmark list --group files
 $ gookmark edit --group files
 ```
 
+### subcommand alias
+support alias for subcommand
+```bash
+# set alias
+$ gookmark config alias.af="add --group f"
+$ gookmark config alias.al="list --group f"
+$ gookmark config alias.ae="edit --group f"
+# use alias
+$ gookmark af foo.txt
+$ gookmark af files bar.txt
+$ gookmark al files
+#   /foo/bar/hoge/fuga/foo.txt
+#   /foo/bar/hoge/fuga/bar.txt
+$ gookmark ae files
+```
+**alias** should be set `subcommand` + `bookmark group option`
+
 ## Install
 
 To install, use `go get`:
