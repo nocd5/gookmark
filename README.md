@@ -6,10 +6,26 @@ Bookmark for CLI
 ## Usage
 
 ```bash
+# current directory : /foo/bar/hoge/fuga
 $ gookmark add
 $ gookmark add ..
 $ gookmark list
+#   /foo/bar/hoge/fuga
+#   /foo/bar/hoge
 $ gookmark edit
+```
+
+### bookmark group
+`gookmark <subcommand> --group <group name> <file or directory>`  
+default &lt;group name&gt; is **bookmark**
+```bash
+# current directory : /foo/bar/hoge/fuga
+$ gookmark add --group files foo.txt
+$ gookmark add  --group files bar.txt
+$ gookmark list --group files
+#   /foo/bar/hoge/fuga/foo.txt
+#   /foo/bar/hoge/fuga/bar.txt
+$ gookmark edit --group files
 ```
 
 ## Install
