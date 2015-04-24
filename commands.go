@@ -73,7 +73,7 @@ func assert(err error) {
 }
 
 func doAdd(c *cli.Context) {
-	group := c.String("group")
+	group := strings.Replace(c.String("group"), "\"", "", -1)
 
 	config, err := LoadConfig()
 	if err != nil {
@@ -153,7 +153,7 @@ func doAdd(c *cli.Context) {
 }
 
 func doList(c *cli.Context) {
-	group := c.String("group")
+	group := strings.Replace(c.String("group"), "\"", "", -1)
 
 	bookmarks, err := GetBookmarks(group)
 	if err != nil {
@@ -166,7 +166,7 @@ func doList(c *cli.Context) {
 }
 
 func doEdit(c *cli.Context) {
-	group := c.String("group")
+	group := strings.Replace(c.String("group"), "\"", "", -1)
 
 	config, err := LoadConfig()
 	if err != nil {
