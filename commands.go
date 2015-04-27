@@ -244,6 +244,9 @@ func GetBookmarks(group string) ([]string, error) {
 }
 
 func PrintCurrentConfig(config *Config) {
-	fmt.Println("ui.editor=" + config.Ui.Editor)
-	fmt.Println("core.linefeed=" + config.Core.Linefeed)
+	fmt.Printf("ui.editor=%q\n", config.Ui.Editor)
+	fmt.Printf("core.linefeed=%q\n", config.Core.Linefeed)
+	for k, v := range config.Alias {
+		fmt.Printf("alias.%s=%q\n", k, v)
+	}
 }
