@@ -1,7 +1,7 @@
 package main
 
 import (
-	"./utils"
+  "github.com/nocd5/gookmark/utils"
 	"fmt"
 	"os"
 
