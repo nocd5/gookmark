@@ -1,8 +1,8 @@
 package main
 
 import (
-  "github.com/nocd5/gookmark/utils"
 	"fmt"
+	"github.com/nocd5/gookmark/utils"
 	"os"
 
 	"github.com/codegangsta/cli"
